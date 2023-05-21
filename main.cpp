@@ -1,20 +1,37 @@
 #include <iostream>
 #include <iomanip>
+#include <opencv2/imgproc.hpp>
 #include "opencv2/imgcodecs.hpp"
 #include "opencv2/highgui.hpp"
+#include "src/MedianFilter.h"
+#include "opencv2/core/core.hpp"
+
 
 #define PRINT 0
 
+void sort(std::vector<uchar>& window, uchar value){
+
+}
+
 int medianBlur(const cv::Mat& inputImage, cv::Mat& smoothedImage, int apertureSize){
-    if (apertureSize < 0 or  apertureSize % 2 == 0){
-        std::cout<<"Positive Odd number needed\n";
+    if (inputImage.empty() or smoothedImage.empty()){
+        std::cout<<"Empty image is not allowed !\n";
         return EXIT_FAILURE;
     }
+
+    if (apertureSize < 0 or  apertureSize % 2 == 0 or
+        apertureSize >= inputImage.cols or apertureSize >= inputImage.rows){
+        std::cout<<"Wrong apertureSize!\n";
+        return EXIT_FAILURE;
+    }
+
 
     std::vector<uchar> window(apertureSize*apertureSize);
 
 
     auto* imgMat = inputImage.ptr();
+    auto* smoothMat = smoothedImage.ptr();
+    auto smoothWidth = smoothedImage.cols;
 
     for(int row = apertureSize/2; row < inputImage.rows - apertureSize/2; row++){
         for(int col = apertureSize/2; col < inputImage.cols - apertureSize/2; col++){
@@ -35,26 +52,17 @@ int medianBlur(const cv::Mat& inputImage, cv::Mat& smoothedImage, int apertureSi
             }
             std::cout<<" : "<<int(median)<<"\n";
 #endif
-            smoothedImage.at<uchar>(row,col) = median;
+            smoothMat[row*smoothWidth + col] = median;
         }
     }
     return EXIT_SUCCESS;
 }
 
-
-
-int main() {
-    std::string image_path = "../res/maxresdefault.jpg";
-    auto src = imread( image_path, cv::IMREAD_GRAYSCALE);
-//    src = cv::Mat(6,6, CV_8U);
+cv::Mat test(cv::Mat& src, int windowSize){
+    //    src = cv::Mat(6,6, CV_8U);
 //    cv::randu(src, 0, 256);
 
     cv::Mat dst = src.clone();
-    if (src.empty())
-    {
-        std::cout<<"Can't open image :"<<image_path<<"\n";
-        return EXIT_FAILURE;
-    }
     std::cout<<src.size<<"\n";
 
 #if PRINT
@@ -68,14 +76,16 @@ int main() {
     }
 #endif
     auto begin = std::chrono::steady_clock::now();
-    auto error = medianBlur(src, dst, 7);
+
+    auto error = medianBlur(src, dst, windowSize);
+
+    auto end = std::chrono::steady_clock::now();
     if (error != EXIT_SUCCESS){
         std::cout<<"! ERROR\n";
     }
-
-    auto end = std::chrono::steady_clock::now();
-    std::cout << "Time difference = " << std::chrono::duration_cast<std::chrono::microseconds>(end - begin).count() << "[µs]" << std::endl;
-
+    double elapsedTime = std::chrono::duration_cast<std::chrono::milliseconds>(end - begin).count();
+    std::cout <<"Aperture " <<windowSize<<"x"<<windowSize<<"; Time difference = " << elapsedTime << "[ms]" << std::endl;
+    std::cout<< 1000.0/elapsedTime<<" FPS\n";
 #if PRINT
     auto* row_dst = dst.ptr();
     for(int i = 0; i < src.rows; i++){
@@ -88,6 +98,34 @@ int main() {
     cv::imshow("original", src);
     cv::imshow("color", dst);
     cv::waitKey();
+    cv::destroyAllWindows();
+    return dst;
+}
+
+
+int main() {
+    std::string image_path = "../res/maxresdefault.jpg";
+    auto src = imread( image_path, cv::IMREAD_GRAYSCALE);
+    if (src.empty())
+    {
+        std::cout<<"Can't open image :"<<image_path<<"\n";
+        return EXIT_FAILURE;
+    }
+
+    int windowSize = 3;
+    Filters::MedianFilter filter(windowSize);
+
+    auto begin = std::chrono::steady_clock::now();
+    auto dst_ = filter.smoothSignal(src);
+    auto end = std::chrono::steady_clock::now();
+
+    double elapsedTime = std::chrono::duration_cast<std::chrono::milliseconds>(end - begin).count();
+    std::cout <<"Aperture " <<windowSize<<"x"<<windowSize<<"; Time difference = " << elapsedTime << "[ms]" << std::endl;
+    std::cout<< 1000.0/elapsedTime<<" FPS\n";
+
+//    cv::imshow("Original", src);
+//    cv::imshow("Smoothed", dst_);
+//    cv::waitKey();
 
     return 0;
 }
