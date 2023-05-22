@@ -1,6 +1,7 @@
 #include <iostream>
 #include <iomanip>
 #include <opencv2/imgproc.hpp>
+#include <thread>
 #include "opencv2/imgcodecs.hpp"
 #include "opencv2/highgui.hpp"
 #include "src/MedianFilter.h"
@@ -112,20 +113,22 @@ int main() {
         return EXIT_FAILURE;
     }
 
-    int windowSize = 3;
+    int windowSize = 5;
     Filters::MedianFilter filter(windowSize);
 
+    //cv::Mat dst_;
     auto begin = std::chrono::steady_clock::now();
     auto dst_ = filter.smoothSignal(src);
+    //cv::medianBlur(src, dst_, 5);
     auto end = std::chrono::steady_clock::now();
 
     double elapsedTime = std::chrono::duration_cast<std::chrono::milliseconds>(end - begin).count();
     std::cout <<"Aperture " <<windowSize<<"x"<<windowSize<<"; Time difference = " << elapsedTime << "[ms]" << std::endl;
     std::cout<< 1000.0/elapsedTime<<" FPS\n";
-
-//    cv::imshow("Original", src);
-//    cv::imshow("Smoothed", dst_);
-//    cv::waitKey();
+    std::cout<<std::thread::hardware_concurrency()<<"\n";
+    cv::imshow("Original", src);
+    cv::imshow("Smoothed", dst_);
+    cv::waitKey();
 
     return 0;
 }

@@ -4,6 +4,8 @@
 
 #include <iostream>
 #include <iomanip>
+#include <thread>
+#include <atomic>
 #include "MedianFilter.h"
 
 
@@ -16,30 +18,30 @@ cv::Mat Filters::MedianFilter::smoothSignal(const cv::Mat &inputImage) {
     }
 
     cv::Mat extendedImage = expandMat(inputImage);
-    cv::Mat smoothImage = cv::Mat::zeros(inputImage.rows, inputImage.cols, inputImage.type());;
-    //TODO: add border control
-    auto windowPtr = window_.data();
-    auto extendedPtr = extendedImage.ptr();
-    auto smoothPtr = smoothImage.ptr();
 
-    cv::Point windowPosition(0,0);
+    cv::Mat smoothImage = inputImage.clone();
 
-    for(int row = apertureSize_/2; row < extendedImage.rows - apertureSize_/2; row++, windowPosition.y++, windowPosition.x = 0){
+    int threadsNum = std::max(1, int(std::thread::hardware_concurrency()));
 
-        for(int col = apertureSize_/2; col < extendedImage.cols - apertureSize_/2; col++, windowPosition.x++) {
+    std::vector<std::thread> threads;
 
-            for (int windowRow = 0; windowRow < apertureSize_; windowRow++) {
-                std::memcpy(windowPtr + windowRow*apertureSize_,
-                            extendedPtr + (windowPosition.y + windowRow)* extendedImage.cols + windowPosition.x, apertureSize_);
-            }
+    int step = inputImage.rows/threadsNum;
+    int apertureSize = apertureSize_;
 
-            std::sort(window_.begin(), window_.end());
 
-            auto median = window_[apertureSize_/ 2];
-            smoothPtr[row*smoothImage.cols + col ] = median;
-        }
+    for(int startRow = 0; startRow < inputImage.rows; startRow += step){
+        threads.emplace_back([&extendedImage, &smoothImage, apertureSize](int startRow, int endRow){
 
+                filterLines(extendedImage,smoothImage, startRow, endRow, apertureSize);
+
+            },startRow, startRow + step);
     }
+
+
+    for(auto& thread : threads){
+        thread.join();
+    }
+
     return smoothImage;
 }
 
@@ -58,6 +60,7 @@ int Filters::MedianFilter::validateSignal(const cv::Mat &inputImage) {
     }
     return EXIT_SUCCESS;
 }
+
 
 cv::Mat Filters::MedianFilter::expandMat(const cv::Mat &inputImage) {
     int expansionZone = apertureSize_/2;
@@ -94,5 +97,35 @@ cv::Mat Filters::MedianFilter::expandMat(const cv::Mat &inputImage) {
 //    cv::waitKey();
 
     return smoothTemplate;
+}
+
+void Filters::MedianFilter::filterLines(const cv::Mat &extendedImage, cv::Mat &smoothImage, int firstRow, int lastRow, int apertureSize) {
+    std::vector<uchar> window_(apertureSize*apertureSize);
+    auto windowPtr = window_.data();
+    auto extendedPtr = extendedImage.ptr();
+    auto smoothPtr = smoothImage.ptr();
+    auto* medianPtr = windowPtr + window_.size()/2;
+
+    cv::Point windowPosition(0,firstRow);
+
+    for(int row = firstRow + apertureSize/2;
+            row < lastRow + apertureSize/2;
+            row++, windowPosition.y++, windowPosition.x = 0)
+    {
+        for(int col = apertureSize/2; col < extendedImage.cols; col++, windowPosition.x++)
+        {
+
+            for (int windowRow = 0; windowRow < apertureSize; windowRow++) {
+                std::memcpy(windowPtr + windowRow*apertureSize,
+                            extendedPtr + (windowPosition.y + windowRow)* extendedImage.cols + windowPosition.x, apertureSize);
+            }
+
+            std::sort(window_.begin(), window_.end());
+
+            smoothPtr[row*smoothImage.cols + col ] = *medianPtr;
+        }
+
+    }
+
 }
 

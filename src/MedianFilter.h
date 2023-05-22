@@ -9,7 +9,7 @@
 namespace Filters{
     class MedianFilter {
     public:
-        explicit MedianFilter(uint apertureSize) : apertureSize_(apertureSize)
+        explicit MedianFilter(uint apertureSize) : apertureSize_(int(apertureSize))
         {
             window_.resize(apertureSize_*apertureSize);
         }
@@ -20,6 +20,7 @@ namespace Filters{
 
         int validateSignal(const cv::Mat& inputImage);
         cv::Mat expandMat(const cv::Mat& inputImage);
+        static void filterLines(const cv::Mat& smoothTemplate, cv::Mat& image, int firstRow, int lastRow, int apertureSize);
 
         int apertureSize_;
         std::vector<uchar> window_;
