@@ -113,7 +113,7 @@ int main() {
         return EXIT_FAILURE;
     }
 
-    int windowSize = 5;
+    int windowSize = 3;
     Filters::MedianFilter filter(windowSize);
 
     //cv::Mat dst_;
