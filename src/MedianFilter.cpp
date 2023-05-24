@@ -5,7 +5,6 @@
 #include <iostream>
 #include <iomanip>
 #include <thread>
-#include <atomic>
 #include "MedianFilter.h"
 
 
@@ -22,7 +21,7 @@ cv::Mat Filters::MedianFilter::smoothSignal(const cv::Mat &inputImage) {
     cv::Mat smoothImage = inputImage.clone();
 
     int threadsNum = std::max(1, int(std::thread::hardware_concurrency()));
-//    threadsNum = 1;
+    threadsNum = 1;
     std::vector<std::thread> threads;
 
     int step = inputImage.cols/threadsNum;
@@ -100,69 +99,43 @@ cv::Mat Filters::MedianFilter::expandMat(const cv::Mat &inputImage) {
 }
 
 void Filters::MedianFilter::filterLines(const cv::Mat &extendedImage, cv::Mat &smoothImage, int firstCol, int lastCol, int apertureSize) {
-    std::vector<uchar> window_(apertureSize*apertureSize);
-    auto windowPtr = window_.data();
-    auto extendedPtr = extendedImage.ptr();
     auto smoothPtr = smoothImage.ptr();
-    auto medianIt = window_.begin() + window_.size() / 2;
+    int windowSize = apertureSize*apertureSize/2;
+
+    std::vector<std::array<int, 256>> hist(lastCol - firstCol);
 
 
-
-    for(int col = firstCol; col < lastCol; col+= 2)
+    for(int col = firstCol, histCol = 0; col < lastCol; col++, histCol++)
     {
+        auto* hist_ = hist[histCol].data();
+
         for (int windowRow = 0; windowRow < apertureSize; windowRow++) {
-            std::memcpy(windowPtr + windowRow*apertureSize,
-                        extendedPtr + ( windowRow) * extendedImage.cols + col, apertureSize);
+            auto extendedRow = extendedImage.ptr(windowRow);
+            for(int windowCol = 0; windowCol < apertureSize; windowCol++){
+                hist_[extendedRow[col + windowCol]]++;
+            }
         }
 
-        for(int row = 0, windowRow = apertureSize - 1;
-            row < smoothImage.rows;
-            row++, windowRow++)
+        for(int row = 0, windowRow = apertureSize - 1; row < smoothImage.rows; row++, windowRow++)
         {
 
-            std::memcpy(windowPtr + (windowRow % apertureSize)*apertureSize,
-                        extendedPtr + (row + apertureSize - 1)* extendedImage.cols + col, apertureSize);
+            uchar histInd = 0;
+            for (int accum = 0; accum < windowSize/2; histInd++){
+                accum += hist_[histInd];
+            }
+            smoothPtr[row*smoothImage.cols + col ] = histInd - 1;
 
-            std::nth_element(window_.begin(), medianIt,window_.end());
+            auto extendedRow = extendedImage.ptr(row),
+                 newRow = extendedImage.ptr(row + apertureSize);
 
-            smoothPtr[row*smoothImage.cols + col ] = *medianIt.base();
+
+            for(int i = 0; i < apertureSize; i++){
+                hist_[extendedRow[col + i]]--;
+                hist_[newRow[col + i]]++;
+            }
 
         }
+
     }
 
-//    for(int row = firstRow + apertureSize/2;
-//            row < lastRow + apertureSize/2 - 1;
-//            row+=3, windowPosition.y+=3, windowPosition.x = 0)
-//    {
-//        for(int col = apertureSize/2; col < extendedImage.cols; col++, windowPosition.x++)
-//        {
-//
-//            for (int windowRow = 0; windowRow < apertureSize; windowRow++) {
-//                std::memcpy(windowPtr + windowRow*apertureSize,
-//                            extendedPtr + (windowPosition.y + windowRow)* extendedImage.cols + windowPosition.x, apertureSize);
-//            }
-//            // TODO: КРЧ надо делать ебки на размер окна, возможно, будет нормас прогуляться по столбцам, а не по строка
-//            // мы так экономим РАЗМЕР_ОКНА - 1 операций
-//            std::sort(window_.begin(), window_.end());
-//
-//            smoothPtr[row*smoothImage.cols + col ] = *medianPtr;
-//
-//            std::memcpy(windowPtr ,
-//                        extendedPtr + (windowPosition.y + apertureSize)* extendedImage.cols + windowPosition.x, apertureSize);
-//            std::sort(window_.begin(), window_.end());
-//
-//            smoothPtr[(row+1)*smoothImage.cols + col ] = *medianPtr;
-//
-//            std::memcpy(windowPtr + apertureSize,
-//                        extendedPtr + (windowPosition.y + apertureSize + 1)* extendedImage.cols + windowPosition.x, apertureSize);
-//            std::sort(window_.begin(), window_.end());
-//
-//            smoothPtr[(row+2)*smoothImage.cols + col ] = *medianPtr;
-//        }
-//
-//    }
-
 }
-
-
-
