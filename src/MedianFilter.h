@@ -14,9 +14,11 @@ namespace Filters{
             window_.resize(apertureSize_*apertureSize);
         }
 
-        cv::Mat smoothSignal(const cv::Mat& inputImage);
+        cv::Mat smoothImage(const cv::Mat& inputImage);
 
     private:
+
+        cv::Mat smoothChannel(const cv::Mat& inputImage);
 
         int validateSignal(const cv::Mat& inputImage);
         cv::Mat expandMat(const cv::Mat& inputImage);
