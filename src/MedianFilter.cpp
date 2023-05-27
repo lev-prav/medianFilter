@@ -7,6 +7,7 @@
 #include <thread>
 #include <future>
 #include "MedianFilter.h"
+#include "Histogram.h"
 
 
 cv::Mat Filters::MedianFilter::smoothImage(const cv::Mat &inputImage) {
@@ -51,28 +52,30 @@ cv::Mat Filters::MedianFilter::smoothImage(const cv::Mat &inputImage) {
 cv::Mat Filters::MedianFilter::smoothChannel(const cv::Mat &inputImage) {
 
     cv::Mat extendedImage = expandMat(inputImage);
-
     cv::Mat smoothImage = inputImage.clone();
 
     int threadsNum = std::max(1, int(std::thread::hardware_concurrency()));
-//    threadsNum = 1;
-    std::vector<std::thread> threads;
 
-    int step = inputImage.cols/threadsNum;
+    std::vector<std::future<void>> filtersThreads;
 
     //TODO: можно засунуть работу с потоками в тред пулл
-    for(int startCol = 0, apertureSize = apertureSize_; startCol < inputImage.cols; startCol += step){
-        threads.emplace_back([&extendedImage, &smoothImage, apertureSize](int startCol, int endCol){
+    for(int startCol = 0, step = inputImage.cols/threadsNum, apertureSize = apertureSize_;
+        startCol < inputImage.cols;
+        startCol += step){
 
-            filterLines(extendedImage,smoothImage, startCol, endCol, apertureSize);
+        filtersThreads.emplace_back(std::async(
+                [&extendedImage, &smoothImage, &apertureSize](int startCol, int endCol) {
 
-        },startCol, startCol + step);
+                    filterColumns(extendedImage, smoothImage, startCol, endCol, apertureSize);
+
+                    }
+        ,startCol, startCol + step));
     }
 
-
-    for(auto& thread : threads){
-        thread.join();
+    for (auto& filterThread : filtersThreads) {
+        filterThread.wait();
     }
+
 
     return smoothImage;
 }
@@ -133,22 +136,20 @@ cv::Mat Filters::MedianFilter::expandMat(const cv::Mat &inputImage) {
     return smoothTemplate;
 }
 
-void Filters::MedianFilter::filterLines(const cv::Mat &extendedImage, cv::Mat &smoothImage, int firstCol, int lastCol, int apertureSize) {
+void Filters::MedianFilter::filterColumns(const cv::Mat &extendedImage, cv::Mat &smoothImage, int firstCol, int lastCol, int apertureSize) {
     auto smoothPtr = smoothImage.ptr();
     int windowSize = apertureSize*apertureSize/2;
 
-    //TODO: вынести гистограму в класс
-    std::vector<std::array<int, 256>> hist(lastCol - firstCol);
-
+    std::vector<Histogram> histograms(lastCol - firstCol);
 
     for(int col = firstCol, histCol = 0; col < lastCol; col++, histCol++)
     {
-        auto* hist_ = hist[histCol].data();
+        Histogram& columnHist = histograms.at(histCol);
 
         for (int windowRow = 0; windowRow < apertureSize; windowRow++) {
             auto extendedRow = extendedImage.ptr(windowRow);
             for(int windowCol = 0; windowCol < apertureSize; windowCol++){
-                hist_[extendedRow[col + windowCol]]++;
+                columnHist.increaseFrequency(extendedRow[col + windowCol]);
             }
         }
 
@@ -157,7 +158,7 @@ void Filters::MedianFilter::filterLines(const cv::Mat &extendedImage, cv::Mat &s
 
             uchar histInd = 0;
             for (int accum = 0; accum < windowSize/2; ++histInd){
-                accum += hist_[histInd];
+                accum += columnHist.getCount(histInd);
             }
             smoothPtr[row*smoothImage.cols + col ] = histInd - 1;
 
@@ -165,8 +166,9 @@ void Filters::MedianFilter::filterLines(const cv::Mat &extendedImage, cv::Mat &s
                  nextRowPtr = extendedImage.ptr(nextRow);
 
             for(int i = 0; i < apertureSize; i++){
-                hist_[oldestRowPtr[col + i]]--;
-                hist_[nextRowPtr[col + i]]++;
+                columnHist.reduceFrequency(   oldestRowPtr[col + i]);
+                columnHist.increaseFrequency( nextRowPtr[col + i]);
+
             }
 
         }

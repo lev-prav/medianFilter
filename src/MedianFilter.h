@@ -22,7 +22,7 @@ namespace Filters{
 
         int validateSignal(const cv::Mat& inputImage);
         cv::Mat expandMat(const cv::Mat& inputImage);
-        static void filterLines(const cv::Mat& smoothTemplate, cv::Mat& image, int firstCol, int lastCol, int apertureSize);
+        static void filterColumns(const cv::Mat& extendedImage, cv::Mat& smoothImage, int firstCol, int lastCol, int apertureSize);
 
         int apertureSize_;
         std::vector<uchar> window_;

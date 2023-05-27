@@ -12,10 +12,20 @@ namespace Filters{
     class Histogram {
     public:
 
-        inline void add(int index);
-        inline void subtract(int index);
+        inline void increaseFrequency(int intensity) {
+            histPtr_[intensity]++;
+        }
+        inline void reduceFrequency(int intensity){
+            histPtr_[intensity]--;
+        }
+        inline int getCount(int intensity)  {
+            return histPtr_[intensity];
+        }
+
 
     private:
+
+
         std::array<uchar, 256> hist_ {0};
         uchar* histPtr_ = hist_.data();
     };
