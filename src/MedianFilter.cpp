@@ -176,3 +176,21 @@ void Filters::MedianFilter::filterColumns(const cv::Mat &extendedImage, cv::Mat 
     }
 
 }
+
+Filters::MedianFilter::MedianFilter(uint apertureSize) : apertureSize_(int(apertureSize))
+{
+    //check if the aperture size if correct
+    bool apertureValid = checkAperture(apertureSize);
+    if (apertureValid){
+        std::cout<<"Wrong aperture. Default set: "<<defaultAperture_<<"\n";
+    }
+}
+
+bool Filters::MedianFilter::checkAperture(uint aperture) {
+    if (aperture % 2 == 0 ){
+        apertureSize_ = defaultAperture_;
+        return false;
+    }
+    return true;
+}
+

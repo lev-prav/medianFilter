@@ -9,23 +9,25 @@
 namespace Filters{
     class MedianFilter {
     public:
-        explicit MedianFilter(uint apertureSize) : apertureSize_(int(apertureSize))
-        {
-            window_.resize(apertureSize_*apertureSize);
-        }
+        explicit MedianFilter(uint apertureSize);
 
         cv::Mat smoothImage(const cv::Mat& inputImage);
 
     private:
 
+        explicit MedianFilter(int apertureSize) : apertureSize_(apertureSize)
+        {}
+
         cv::Mat smoothChannel(const cv::Mat& inputImage);
+
+        bool checkAperture(uint aperture);
 
         int validateSignal(const cv::Mat& inputImage);
         cv::Mat expandMat(const cv::Mat& inputImage);
         static void filterColumns(const cv::Mat& extendedImage, cv::Mat& smoothImage, int firstCol, int lastCol, int apertureSize);
 
         int apertureSize_;
-        std::vector<uchar> window_;
+        int defaultAperture_ = 3;
     };
 };
 

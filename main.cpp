@@ -11,7 +11,7 @@
 
 #define PRINT 0
 
-cv::Mat test(const cv::Mat& rawImg, int apertureSize, double& time,std::stringstream & logFile){
+cv::Mat test(const cv::Mat& rawImg, uint apertureSize, double& time,std::stringstream & logFile){
     Filters::MedianFilter filter(apertureSize);
 
     //cv::Mat dst_;
@@ -85,7 +85,7 @@ int main() {
         std::cout<<"\n";
     }
 
-    std::ofstream benchmarksFile("../benchmarks.txt");
+    std::ofstream benchmarksFile("../benchmarks_.txt");
     benchmarksFile<<benchmarks.str();
 
     return 0;
