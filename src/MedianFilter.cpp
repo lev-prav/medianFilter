@@ -12,24 +12,25 @@
 
 cv::Mat Filters::MedianFilter::smoothImage(const cv::Mat &inputImage) {
     int validationResult = validateSignal(inputImage);
-
     if (validationResult != EXIT_SUCCESS){
         return {};
     }
 
+    // prepare to process 1 or 3 channels images
     std::vector<cv::Mat> channels(inputImage.channels()),
                          smoothChannels;
     cv::Mat smoothImage;
 
     cv::split(inputImage, channels);
-    //TODO: ADD THREADS
-//    int threadsNum = std::max(1, int(std::thread::hardware_concurrency()));
 
+    // special filter for channels
+    // Personal filter for every channel
     auto filterSingleChannel = [](const cv::Mat& inputChannel, int apertureSize) -> cv::Mat{
         MedianFilter filter(apertureSize);
         return filter.smoothChannel(inputChannel);
     };
 
+    // create threads and pin to result
     std::vector<std::future<cv::Mat>> futures;
     for(cv::Mat& channel : channels){
         futures.emplace_back(
@@ -37,12 +38,12 @@ cv::Mat Filters::MedianFilter::smoothImage(const cv::Mat &inputImage) {
         );
     }
 
-//    auto begin = std::chrono::steady_clock::now();
-
+    // get filtered channels
     for(auto& future : futures){
         smoothChannels.emplace_back(future.get());
     }
 
+    // megre separate channels to single Image
     // Costs about 5 ms
     cv::merge(smoothChannels, smoothImage);
 
@@ -50,15 +51,19 @@ cv::Mat Filters::MedianFilter::smoothImage(const cv::Mat &inputImage) {
 }
 
 cv::Mat Filters::MedianFilter::smoothChannel(const cv::Mat &inputImage) {
-
+    //prepare object for bordered template and result
     cv::Mat extendedImage = expandMat(inputImage);
     cv::Mat smoothImage = inputImage.clone();
 
+    //get the optimum threads number
+    //it may be not so honest for 3 channel images, but it makes a lot of sense with 1 channel pics
     int threadsNum = std::max(1, int(std::thread::hardware_concurrency()));
 
+    //prepare to wait threads
     std::vector<std::future<void>> filtersThreads;
 
     //TODO: можно засунуть работу с потоками в тред пулл
+    //devide image in equal parts and process them parallel (or async, it depends)
     for(int startCol = 0, step = inputImage.cols/threadsNum, apertureSize = apertureSize_;
         startCol < inputImage.cols;
         startCol += step){
@@ -72,6 +77,7 @@ cv::Mat Filters::MedianFilter::smoothChannel(const cv::Mat &inputImage) {
         ,startCol, startCol + step));
     }
 
+    //wait till complete
     for (auto& filterThread : filtersThreads) {
         filterThread.wait();
     }
@@ -80,7 +86,7 @@ cv::Mat Filters::MedianFilter::smoothChannel(const cv::Mat &inputImage) {
     return smoothImage;
 }
 
-int Filters::MedianFilter::validateSignal(const cv::Mat &inputImage) {
+int Filters::MedianFilter::validateSignal(const cv::Mat &inputImage) const {
     if (inputImage.empty()){
         std::cout<<"Empty image is not allowed !\n";
         return EXIT_FAILURE;
@@ -97,16 +103,15 @@ int Filters::MedianFilter::validateSignal(const cv::Mat &inputImage) {
 }
 
 
-cv::Mat Filters::MedianFilter::expandMat(const cv::Mat &inputImage) {
+cv::Mat Filters::MedianFilter::expandMat(const cv::Mat &inputImage) const {
     //thickness of additional borders
     int expansionZone = apertureSize_/2;
     cv::Mat smoothTemplate = cv::Mat::zeros(inputImage.rows +  expansionZone*2, inputImage.cols + expansionZone*2, inputImage.type());
 
+    //paste the original image inside template
     cv::Rect inputImagePosition(expansionZone, expansionZone,inputImage.cols, inputImage.rows);
-
     auto inputImageArea = smoothTemplate(inputImagePosition);
     inputImage.copyTo(inputImageArea);
-
 
     // filling blank zone on sides
     for(int row = inputImagePosition.y; row < inputImagePosition.y + inputImagePosition.height; row++){
@@ -137,9 +142,11 @@ cv::Mat Filters::MedianFilter::expandMat(const cv::Mat &inputImage) {
 }
 
 void Filters::MedianFilter::filterColumns(const cv::Mat &extendedImage, cv::Mat &smoothImage, int firstCol, int lastCol, int apertureSize) {
+    //get pointer to result image for moving faster
     auto smoothPtr = smoothImage.ptr();
     int windowSize = apertureSize*apertureSize/2;
 
+    //build histogram for every column
     std::vector<Histogram> histograms(lastCol - firstCol);
 
     for(int col = firstCol, histCol = 0; col < lastCol; col++, histCol++)
@@ -149,6 +156,7 @@ void Filters::MedianFilter::filterColumns(const cv::Mat &extendedImage, cv::Mat 
         for (int windowRow = 0; windowRow < apertureSize; windowRow++) {
             auto extendedRow = extendedImage.ptr(windowRow);
             for(int windowCol = 0; windowCol < apertureSize; windowCol++){
+                // previously set first window histogram
                 columnHist.increaseFrequency(extendedRow[col + windowCol]);
             }
         }
@@ -156,12 +164,15 @@ void Filters::MedianFilter::filterColumns(const cv::Mat &extendedImage, cv::Mat 
         for(int row = 0, nextRow = apertureSize; row < smoothImage.rows; row++, nextRow = std::min(smoothImage.rows, nextRow + 1))
         {
 
+            // accumulate values before median
             uchar histInd = 0;
-            for (int accum = 0; accum < windowSize/2; ++histInd){
-                accum += columnHist.getCount(histInd);
+            for (int intensityPassed = 0; intensityPassed < windowSize/2; ++histInd){
+                intensityPassed += columnHist.getCount(histInd);
             }
+            //paste median to the smooth image
             smoothPtr[row*smoothImage.cols + col ] = histInd - 1;
 
+            // subtract the oldest line from the histogram and add next line
             auto oldestRowPtr = extendedImage.ptr(row),
                  nextRowPtr = extendedImage.ptr(nextRow);
 
@@ -179,18 +190,15 @@ void Filters::MedianFilter::filterColumns(const cv::Mat &extendedImage, cv::Mat 
 
 Filters::MedianFilter::MedianFilter(uint apertureSize) : apertureSize_(int(apertureSize))
 {
-    //check if the aperture size if correct
+    //check if the aperture size is correct
     bool apertureValid = checkAperture(apertureSize);
-    if (apertureValid){
+    if (!apertureValid){
         std::cout<<"Wrong aperture. Default set: "<<defaultAperture_<<"\n";
+        apertureSize_ = defaultAperture_;
     }
 }
 
 bool Filters::MedianFilter::checkAperture(uint aperture) {
-    if (aperture % 2 == 0 ){
-        apertureSize_ = defaultAperture_;
-        return false;
-    }
-    return true;
+    return aperture % 2 != 0;
 }
 

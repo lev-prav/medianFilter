@@ -1,0 +1,92 @@
+COLOR size: 720x1280
+Aperture 3x3; Time difference = 74[ms]
+13.5135 FPS
+Aperture 3x3; Time difference = 69[ms]
+14.4928 FPS
+Aperture 3x3; Time difference = 75[ms]
+13.3333 FPS
+Aperture 3x3; Time difference = 75[ms]
+13.3333 FPS
+Aperture 3x3; Time difference = 69[ms]
+14.4928 FPS
+Aperture 3x3; Time difference = 76[ms]
+13.1579 FPS
+Aperture 3x3; Time difference = 72[ms]
+13.8889 FPS
+Aperture 3x3; Time difference = 69[ms]
+14.4928 FPS
+Aperture 3x3; Time difference = 69[ms]
+14.4928 FPS
+Aperture 3x3; Time difference = 77[ms]
+12.987 FPS
+Mean time: 72.5[ms]
+Mean fps: 13.7931 FPS
+Aperture 5x5; Time difference = 84[ms]
+11.9048 FPS
+Aperture 5x5; Time difference = 72[ms]
+13.8889 FPS
+Aperture 5x5; Time difference = 85[ms]
+11.7647 FPS
+Aperture 5x5; Time difference = 77[ms]
+12.987 FPS
+Aperture 5x5; Time difference = 76[ms]
+13.1579 FPS
+Aperture 5x5; Time difference = 79[ms]
+12.6582 FPS
+Aperture 5x5; Time difference = 74[ms]
+13.5135 FPS
+Aperture 5x5; Time difference = 73[ms]
+13.6986 FPS
+Aperture 5x5; Time difference = 80[ms]
+12.5 FPS
+Aperture 5x5; Time difference = 72[ms]
+13.8889 FPS
+Mean time: 77.2[ms]
+Mean fps: 12.9534 FPS
+
+GRAY size: 720x1280
+Aperture 3x3; Time difference = 26[ms]
+38.4615 FPS
+Aperture 3x3; Time difference = 23[ms]
+43.4783 FPS
+Aperture 3x3; Time difference = 22[ms]
+45.4545 FPS
+Aperture 3x3; Time difference = 23[ms]
+43.4783 FPS
+Aperture 3x3; Time difference = 24[ms]
+41.6667 FPS
+Aperture 3x3; Time difference = 24[ms]
+41.6667 FPS
+Aperture 3x3; Time difference = 27[ms]
+37.037 FPS
+Aperture 3x3; Time difference = 26[ms]
+38.4615 FPS
+Aperture 3x3; Time difference = 23[ms]
+43.4783 FPS
+Aperture 3x3; Time difference = 23[ms]
+43.4783 FPS
+Mean time: 24.1[ms]
+Mean fps: 41.4938 FPS
+Aperture 5x5; Time difference = 27[ms]
+37.037 FPS
+Aperture 5x5; Time difference = 25[ms]
+40 FPS
+Aperture 5x5; Time difference = 24[ms]
+41.6667 FPS
+Aperture 5x5; Time difference = 23[ms]
+43.4783 FPS
+Aperture 5x5; Time difference = 25[ms]
+40 FPS
+Aperture 5x5; Time difference = 24[ms]
+41.6667 FPS
+Aperture 5x5; Time difference = 24[ms]
+41.6667 FPS
+Aperture 5x5; Time difference = 24[ms]
+41.6667 FPS
+Aperture 5x5; Time difference = 27[ms]
+37.037 FPS
+Aperture 5x5; Time difference = 27[ms]
+37.037 FPS
+Mean time: 25[ms]
+Mean fps: 40 FPS
+

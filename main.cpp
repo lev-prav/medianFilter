@@ -75,6 +75,7 @@ int main() {
             benchmarks<<"Mean fps: "<<fps<<" FPS\n";
 
 
+//
 //            cv::imshow("Original", inputImg);
 //            cv::imshow("Smoothed", smoothImg);
 //            cv::waitKey();

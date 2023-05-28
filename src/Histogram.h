@@ -8,7 +8,9 @@
 
 namespace Filters{
     using uchar = unsigned char;
-
+    /*!
+     * Frequency histogram
+     */
     class Histogram {
     public:
 
@@ -24,9 +26,8 @@ namespace Filters{
 
 
     private:
-
-
         std::array<uchar, 256> hist_ {0};
+        //pointer for fast navigation
         uchar* histPtr_ = hist_.data();
     };
 }

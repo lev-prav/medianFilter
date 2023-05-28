@@ -8,7 +8,7 @@ set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS}")
 find_package( OpenCV REQUIRED )
 include_directories( ${OpenCV_INCLUDE_DIRS} )
 
-add_executable(median_filter main.cpp src/MedianFilter.cpp src/MedianFilter.h src/Histogram.cpp src/Histogram.h)
+add_executable(median_filter main.cpp src/MedianFilter.cpp src/MedianFilter.h src/Histogram.h)
 
 target_link_libraries(median_filter  PRIVATE ${OpenCV_LIBS}
                                                 pthread)
