@@ -31,8 +31,14 @@ cv::Mat test(const cv::Mat& rawImg, uint apertureSize, double& time,std::strings
     return smooth;
 }
 
-int main() {
-    std::string image_path = "../res/maxresdefault.jpg";
+int main(int argc, char** argv) {
+    if (argc < 2){
+        std::cout<<"PASS INPUT IMAGES IN COMAND LINE ARGS\n";
+        return EXIT_FAILURE;
+    }
+
+    std::string image_path = argv[1];
+
     auto src = imread( image_path, cv::IMREAD_COLOR);
 
     if (src.empty())
@@ -60,6 +66,8 @@ int main() {
         cv::Mat smoothImg;
 
         for(int aperture : apertures){
+            std::stringstream outputfile;
+
             double timePassed{0}, totalTime{0}, meanTime{0}, fps{0};
             for(int i = 0; i < testCases; i++){
                 smoothImg = test(inputImg, aperture, timePassed, benchmarks);
@@ -74,10 +82,11 @@ int main() {
             benchmarks<<"Mean time: "<<meanTime<<"[ms]\n";
             benchmarks<<"Mean fps: "<<fps<<" FPS\n";
 
+            outputfile<<"../res/filtered_"<<imgType<<"_"<<aperture<<".png";
 
 //
 //            cv::imshow("Original", inputImg);
-//            cv::imshow("Smoothed", smoothImg);
+            cv::imwrite(outputfile.str(), smoothImg);
 //            cv::waitKey();
 //            cv::destroyAllWindows();
         }
